@@ -1,0 +1,39 @@
+---
+  apiVersion: "extensions/v1beta1"
+  kind: "DaemonSet"
+  metadata: 
+    name: "kube-iptables-tailer"
+    namespace: "kube-system"
+  spec: 
+    template:
+      metadata:
+        labels:
+          app: "kube-iptables-tailer"
+      spec: 
+        containers: 
+          - name: "kube-iptables-tailer"
+            command:
+              - "/kube-iptables-tailer"
+              - "--log_dir=/my-service-logs" # change the output directory of service logs
+              - "--v=4" # enable V-leveled logging at this level
+            env: 
+              - name: "IPTABLES_LOG_PATH"
+                value: "/var/log/iptables.log"
+              - name: "IPTABLES_LOG_PREFIX"
+                # log prefix defined in your iptables chains
+                value: "calico-drop:"
+            image: "kube-iptables-tailer:v0.1.0"
+            volumeMounts: 
+              - name: "iptables-logs"
+                mountPath: "/var/log"
+                readOnly: true
+              - name: "service-logs"
+                mountPath: "/my-service-logs"
+
+        volumes:
+          - name: "iptables-logs"
+            hostPath: 
+              # absolute path of the directory containing iptables log file on your host
+              path: "/var/log"
+          - name: "service-logs"
+            emptyDir: {}

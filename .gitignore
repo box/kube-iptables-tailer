@@ -1,0 +1,5 @@
+*.DS_Store
+.idea/
+kube-iptables-tailer
+**/*.iml
+**/build
