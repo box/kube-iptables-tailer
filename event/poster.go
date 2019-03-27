@@ -1,7 +1,6 @@
 package event
 
 import (
-	"errors"
 	"fmt"
 	"github.com/box/kube-iptables-tailer/drop"
 	"github.com/box/kube-iptables-tailer/metrics"
@@ -29,7 +28,7 @@ type Poster struct {
 	locator            Locator
 }
 
-// Init Poster and return its pointer
+// InitPoster inits a Poster and return its pointer
 func InitPoster() (*Poster, error) {
 	kubeClient, err := initKubeClient()
 	if err != nil {
@@ -45,7 +44,7 @@ func InitPoster() (*Poster, error) {
 
 	locator, err := NewApiServerPodLocator(kubeClient)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Error creating locator: %+v", err))
+		return nil, fmt.Errorf("error creating locator: %+v", err)
 	}
 
 	return &Poster{

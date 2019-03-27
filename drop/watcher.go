@@ -2,7 +2,6 @@ package drop
 
 import (
 	"bufio"
-	"errors"
 	"fmt"
 	"github.com/golang/glog"
 	"io"
@@ -20,7 +19,7 @@ type Watcher struct {
 	curFingerprint   string
 }
 
-// Init a watcher object and return its pointer
+// InitWatcher inits a watcher object and return its pointer
 func InitWatcher(watchFileName string, watchInterval time.Duration) *Watcher {
 	watcher := Watcher{watchFileName: watchFileName, watchInterval: watchInterval}
 	return &watcher
@@ -84,10 +83,10 @@ func (watcher *Watcher) checkRotation(input io.Reader) error {
 	sizeRead, err := input.Read(bytes)
 	// check sizeRead before err according to documentation of Reader.Read()
 	if sizeRead < fingerprintSize {
-		return errors.New(fmt.Sprint("Error getting fingerprint, insufficient content."))
+		return fmt.Errorf("error getting fingerprint due to insufficient content, size read:%v", sizeRead)
 	}
 	if err != nil {
-		return errors.New(fmt.Sprintf("Error checking rotation: error=%+v", err.Error()))
+		return fmt.Errorf("error checking rotation: error=%+v", err.Error())
 	}
 	fingerprint := string(bytes[:])
 	if fingerprint != watcher.curFingerprint {

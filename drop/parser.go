@@ -1,7 +1,6 @@
 package drop
 
 import (
-	"errors"
 	"fmt"
 	"github.com/box/kube-iptables-tailer/util"
 	"github.com/golang/glog"
@@ -24,7 +23,7 @@ type PacketDrop struct {
 
 var fieldCount = reflect.ValueOf(PacketDrop{}).NumField()
 
-// Check if PacketDrop is expired
+// IsExpired returns true if PacketDrop is expired
 func (pd PacketDrop) IsExpired() bool {
 	logTime, err := pd.GetLogTime()
 	if err != nil {
@@ -37,12 +36,12 @@ func (pd PacketDrop) IsExpired() bool {
 	return curTime.Sub(logTime).Minutes() > expiredMinutes
 }
 
-// Get the time object of PacketDrop log time
+// GetLogTime returns the time object of PacketDrop log time
 func (pd PacketDrop) GetLogTime() (time.Time, error) {
 	return time.Parse(PacketDropLogTimeLayout, pd.LogTime)
 }
 
-// Parse the logs from given channel and insert objects of PacketDrop as parsing result to another channel
+// RunParsing parses the logs from given channel and inserts objects of PacketDrop as parsing result to another channel
 func RunParsing(logPrefix string, logChangeCh <-chan string, packetDropCh chan<- PacketDrop) {
 	for log := range logChangeCh {
 		parseErr := parse(logPrefix, log, packetDropCh)
@@ -117,7 +116,7 @@ func getPacketDropLogFields(packetDropLog string) ([]string, error) {
 	logFields := strings.Fields(packetDropLog)
 	// check if the logFields contain enough information about a packet drop
 	if len(logFields) < fieldCount {
-		return []string{}, errors.New(fmt.Sprintf("Invalid packet drop: log=%+v", packetDropLog))
+		return []string{}, fmt.Errorf("error invalid packet drop: log=%+v", packetDropLog)
 	}
 	return logFields, nil
 }
@@ -128,11 +127,11 @@ func getFieldValue(logFields []string, fieldName string) (string, error) {
 		if strings.HasPrefix(field, fieldName) {
 			fieldStrs := strings.Split(field, "=")
 			if len(fieldStrs) < 2 {
-				return "", errors.New(fmt.Sprintf("Missing value: field=%+v", fieldName))
+				return "", fmt.Errorf("error missing value: field=%+v", fieldName)
 			}
 			return fieldStrs[1], nil
 
 		}
 	}
-	return "", errors.New(fmt.Sprintf("Missing field=%+v", fieldName))
+	return "", fmt.Errorf("error missing field=%+v", fieldName)
 }
