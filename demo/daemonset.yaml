@@ -22,7 +22,7 @@
               - name: "IPTABLES_LOG_PREFIX"
                 # log prefix defined in your iptables chains
                 value: "calico-drop:"
-            image: "kube-iptables-tailer:v0.1.0"
+            image: "boxinc/kube-iptables-tailer:v0.1.0"
             volumeMounts: 
               - name: "iptables-logs"
                 mountPath: "/var/log"
