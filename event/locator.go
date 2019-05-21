@@ -128,7 +128,14 @@ func (locator *PodLocator) LocatePod(ip string) (*v1.Pod, error) {
 func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string {
 	if pod != nil {
 		if !pod.Spec.HostNetwork {
-			return pod.Namespace
+			identifier := util.GetEnvStringOrDefault(util.PodIdentifer, util.DefaultPodIdentifier)
+			switch identifier {
+			case "name":
+				return pod.Name
+			case "namespace":
+				return pod.Namespace
+			}
+			return pod.Name
 		}
 		if pod.Spec.NodeName != "" {
 			return pod.Spec.NodeName
