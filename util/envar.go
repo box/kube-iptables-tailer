@@ -10,6 +10,7 @@ import (
 const (
 	IptablesLogPrefix = "IPTABLES_LOG_PREFIX"
 	IptablesLogPath   = "IPTABLES_LOG_PATH"
+	JournalDirectory  = "JOURNAL_DIRECTORY"
 )
 
 // optional env vars

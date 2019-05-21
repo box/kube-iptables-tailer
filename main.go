@@ -9,6 +9,7 @@ import (
 	"github.com/box/kube-iptables-tailer/util"
 	"github.com/golang/glog"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
@@ -32,9 +33,13 @@ func main() {
 	logPrefix := util.GetRequiredEnvString(util.IptablesLogPrefix)
 	go startParsing(logPrefix, logChangeCh, packetDropCh)
 
-	fileName := util.GetRequiredEnvString(util.IptablesLogPath)
-	watchSeconds := util.GetEnvIntOrDefault(util.WatchLogsIntervalSeconds, util.DefaultWatchLogsIntervalSecond)
-	go startWatcher(fileName, time.Duration(watchSeconds)*time.Second, logChangeCh)
+	if journalDir := os.Getenv(util.JournalDirectory); journalDir != "" {
+		go startJournalWatcher(journalDir, logChangeCh)
+	} else {
+		fileName := util.GetRequiredEnvString(util.IptablesLogPath)
+		watchSeconds := util.GetEnvIntOrDefault(util.WatchLogsIntervalSeconds, util.DefaultWatchLogsIntervalSecond)
+		go startWatcher(fileName, time.Duration(watchSeconds)*time.Second, logChangeCh)
+	}
 
 	vg.Wait()
 	close(stopCh)
@@ -63,6 +68,12 @@ func startPoster(packetDropCh <-chan drop.PacketDrop, stopCh <-chan struct{}) {
 func startWatcher(fileName string, interval time.Duration, logChangeCh chan<- string) {
 	watcher := drop.InitWatcher(fileName, interval)
 	watcher.Run(logChangeCh)
+}
+
+//Start journal watcher with given journal directory to watch, and channel to store results
+func startJournalWatcher(journalDir string, logChangeCh chan<- string) {
+	jWatcher := drop.InitJournalWatcher(journalDir)
+	jWatcher.Run(logChangeCh)
 }
 
 //Start parsing process with given channel to get raw logs and another channel to store paring results
