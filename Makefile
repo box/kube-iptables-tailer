@@ -21,7 +21,7 @@ build: clean deps fmt
 	$(ENVVAR) CGO_ENABLED=0 $(GODEP_BIN) go build -o $(APP_NAME)
 
 test-unit: clean deps fmt build
-	$(GODEP_BIN) go test -v -cover ./...
+	CGO_ENABLED=0 $(GODEP_BIN) go test -v -cover ./...
 
 # Make the container using docker multi-stage build process
 # So you don't necessarily have to install golang to make the container
