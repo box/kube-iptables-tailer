@@ -120,7 +120,8 @@ func (locator *PodLocator) LocatePod(ip string) (*v1.Pod, error) {
 }
 
 /*
- * 1. If a pod is not using host networking, return its namespace name.
+ * 1. If a pod is not using host networking, return its namespace name, or if the POD_IDENTIFIER
+ *    environment variable is set to 'pod', return the pod name.
  * 2. If a pod is using host networking, return its hostname. This is because multiple pods may
  *    be sharing the host IP, therefore it's impossible to distinguish which pod is the src/dst.
  * 3. If no pod is found, attempt to resolve the IP to hostname.
