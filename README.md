@@ -74,6 +74,7 @@ We suggest running kube-iptables-tailer as a [Daemonset](https://kubernetes.io/d
 * `PACKET_DROP_EXPIRATION_MINUTES`: (int, default: **10**) Expiration of a packet drop in minutes. Any dropped packet log entries older than this duration will be ignored.
 * `REPEATED_EVENTS_INTERVAL_MINUTES`: (int, default: **2**) Interval of ignoring repeated packet drops in minutes. Any dropped packet log entries with the same source and destination will be ignored if already submitted once within this time period. 
 * `WATCH_LOGS_INTERVAL_SECONDS`: (int, default: **5**) Interval of detecting log changes in seconds. 
+* `POD_IDENTIFIER`: (string, default: **namespace**) How to identify pods in the logs. `name` or `namespace` are currently supported.
 
 ### Metrics 
 Metrics are implemented by Prometheus, which are hosted on the web server at `/metrics`. The metrics have a name `packet_drops_count` and counter with the following tags:
