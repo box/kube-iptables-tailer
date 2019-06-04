@@ -136,7 +136,7 @@ func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string
 			case "namespace":
 				return pod.Namespace
 			}
-			return pod.Name
+			return pod.Namespace
 		}
 		if pod.Spec.NodeName != "" {
 			return pod.Spec.NodeName
