@@ -59,7 +59,8 @@ type PodLocator struct {
  */
 func NewApiServerPodLocator(client *kubernetes.Clientset) (*PodLocator, error) {
 	listWatch := cache.NewListWatchFromClient(
-		client.CoreV1().RESTClient(), "pods", v1.NamespaceAll, fields.Everything())
+		client.CoreV1().RESTClient(), "pods", v1.NamespaceAll,
+		fields.AndSelectors(fields.OneTermEqualSelector("status.phase", "Running")))
 
 	return getPodLocator(listWatch), nil
 }
