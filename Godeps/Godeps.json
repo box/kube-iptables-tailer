@@ -13,6 +13,16 @@
 			"Rev": "b7325b0f3f1097c6546ea5e83c4a23267e58ad71"
 		},
 		{
+			"ImportPath": "github.com/coreos/go-systemd/sdjournal",
+			"Comment": "v19",
+			"Rev": "95778dfbb74eb7e4dbaf43bf7d71809650ef8076"
+		},
+		{
+			"ImportPath": "github.com/coreos/pkg/dlopen",
+			"Comment": "v4-2-g399ea9e",
+			"Rev": "399ea9e2e55f791b6e3d920860dbecb99c3692f0"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Comment": "v1.1.0-1-g782f496",
 			"Rev": "782f4967f2dc4564575ca782fe2d04090b5faca8"

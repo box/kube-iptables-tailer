@@ -62,7 +62,7 @@ We suggest running kube-iptables-tailer as a [Daemonset](https://kubernetes.io/d
 ### Environment Variables 
 
 #### Required: 
-* `IPTABLES_LOG_PATH`: (string) Absolute path to your iptables log file including the full file name. 
+* `IPTABLES_LOG_PATH` or `JOURNAL_DIRECTORY`: (string) Absolute path to your iptables log file, or journald directory including the full path. 
 * `IPTABLES_LOG_PREFIX`: (string) Log prefix defined in your iptables chains. The service will only handle the logs matching this log prefix exactly.
 
 #### Optional:
