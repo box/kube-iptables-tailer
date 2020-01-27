@@ -5,6 +5,9 @@
     name: "kube-iptables-tailer"
     namespace: "kube-system"
   spec: 
+    selector:
+      matchLabels:
+        app: "kube-iptables-tailer"
     template:
       metadata:
         labels:
