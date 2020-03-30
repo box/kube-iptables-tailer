@@ -12,6 +12,8 @@ import (
 
 const fieldSrcIP = "SRC"
 const fieldDstIP = "DST"
+const fieldDstPort = "DPT"
+const fieldProto = "PROTO"
 const PacketDropLogTimeLayout = "2006-01-02T15:04:05.000000-07:00"
 
 // PacketDrop is the result object parsed from single raw log containing information about an iptables packet drop.
@@ -20,6 +22,8 @@ type PacketDrop struct {
 	HostName string
 	SrcIP    string
 	DstIP    string
+	DstPort  string
+	Proto    string
 }
 
 var fieldCount = reflect.ValueOf(PacketDrop{}).NumField()
@@ -103,12 +107,22 @@ func getPacketDrop(packetDropLog string) (PacketDrop, error) {
 	if err != nil {
 		return PacketDrop{}, err
 	}
+	dstPort, err := getFieldValue(logFields, fieldDstPort)
+	if err != nil {
+		return PacketDrop{}, err
+	}
+	proto, err := getFieldValue(logFields, fieldProto)
+	if err != nil {
+		return PacketDrop{}, err
+	}
 
 	return PacketDrop{
 			LogTime:  logTime,
 			HostName: hostName,
 			SrcIP:    srcIP,
-			DstIP:    dstIP},
+			DstIP:    dstIP,
+			DstPort:  dstPort,
+			Proto:    proto},
 		nil
 }
 

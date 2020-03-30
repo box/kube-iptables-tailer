@@ -68,19 +68,21 @@ func TestGetPacketDropMessageForPods(t *testing.T) {
 	testPod := &v1.Pod{}
 	testPod.Namespace = namespace
 	ipAddress := "123.456.789"
+	dstPort := "1234"
+	proto := "TCP"
 	serviceName := getNamespaceOrHostName(testPod, ipAddress, net.DefaultResolver)
 	// test send traffic
-	resultSending := getPacketDropMessage(serviceName, ipAddress, send)
-	expectedSending := fmt.Sprintf("Packet dropped when sending traffic to %s (%s)",
-		namespace, ipAddress)
+	resultSending := getPacketDropMessage(serviceName, ipAddress, dstPort, proto, send)
+	expectedSending := fmt.Sprintf("Packet dropped when sending traffic to %s (%s) on port %s/%s",
+		namespace, ipAddress, dstPort, proto)
 	if resultSending != expectedSending {
 		t.Fatalf("Expected: %v, but got result: %v", expectedSending, resultSending)
 	}
 
 	// test receive traffic
-	resultReceiving := getPacketDropMessage(serviceName, ipAddress, receive)
-	expectedReceiving := fmt.Sprintf("Packet dropped when receiving traffic from %s (%s)",
-		namespace, ipAddress)
+	resultReceiving := getPacketDropMessage(serviceName, ipAddress, dstPort, proto, receive)
+	expectedReceiving := fmt.Sprintf("Packet dropped when receiving traffic from %s (%s) on port %s/%s",
+		namespace, ipAddress, dstPort, proto)
 	if resultReceiving != expectedReceiving {
 		t.Fatalf("Expected: %v, but got result: %v", expectedReceiving, resultReceiving)
 	}
@@ -91,22 +93,24 @@ func TestGetPacketDropMessageForHosts(t *testing.T) {
 	// test when DNS lookup exists
 	ipAddress := "123.456.789"
 	hostName := "mocked-host"
+	dstPort := "1234"
+	proto := "TCP"
 	mockedResolver := initMockDnsResolver()
 	mockedResolver.hostNames[ipAddress] = []string{hostName}
 	serviceName := getNamespaceOrHostName(nil, ipAddress, mockedResolver)
 
 	// test send traffic
-	resultSending := getPacketDropMessage(serviceName, ipAddress, send)
-	expectedSending := fmt.Sprintf("Packet dropped when sending traffic to %s (%s)",
-		hostName, ipAddress)
+	resultSending := getPacketDropMessage(serviceName, ipAddress, dstPort, proto, send)
+	expectedSending := fmt.Sprintf("Packet dropped when sending traffic to %s (%s) on port %s/%s",
+		hostName, ipAddress, dstPort, proto)
 	if resultSending != expectedSending {
 		t.Fatalf("Expected: %v, but got result: %v", expectedSending, resultSending)
 	}
 
 	// test receive traffic
-	resultReceiving := getPacketDropMessage(serviceName, ipAddress, receive)
-	expectedReceiving := fmt.Sprintf("Packet dropped when receiving traffic from %s (%s)",
-		hostName, ipAddress)
+	resultReceiving := getPacketDropMessage(serviceName, ipAddress, dstPort, proto, receive)
+	expectedReceiving := fmt.Sprintf("Packet dropped when receiving traffic from %s (%s) on port %s/%s",
+		hostName, ipAddress, dstPort, proto)
 	if resultReceiving != expectedReceiving {
 		t.Fatalf("Expected: %v, but got result: %v", expectedReceiving, resultReceiving)
 	}
@@ -114,8 +118,9 @@ func TestGetPacketDropMessageForHosts(t *testing.T) {
 	// test when DNS lookup returns empty hostname, should return IP address
 	mockedResolver = initMockDnsResolver()
 	serviceName = getNamespaceOrHostName(nil, ipAddress, mockedResolver)
-	resultDnsEmpty := getPacketDropMessage(serviceName, ipAddress, send)
-	expectedDnsEmpty := fmt.Sprintf("Packet dropped when sending traffic to %s", ipAddress)
+	resultDnsEmpty := getPacketDropMessage(serviceName, ipAddress, dstPort, proto, send)
+	expectedDnsEmpty := fmt.Sprintf("Packet dropped when sending traffic to %s on port %s/%s",
+		ipAddress, dstPort, proto)
 	if resultSending != expectedSending {
 		t.Fatalf("Expected: %v, but got result: %v", expectedDnsEmpty, resultDnsEmpty)
 	}
@@ -124,8 +129,9 @@ func TestGetPacketDropMessageForHosts(t *testing.T) {
 	mockedResolver = initMockDnsResolver()
 	mockedResolver.err = errors.New("DNS lookup fails")
 	serviceName = getNamespaceOrHostName(nil, ipAddress, mockedResolver)
-	resultDnsFails := getPacketDropMessage(serviceName, ipAddress, receive)
-	expectedDnsFails := fmt.Sprintf("Packet dropped when sending traffic to %s", ipAddress)
+	resultDnsFails := getPacketDropMessage(serviceName, ipAddress, dstPort, proto, receive)
+	expectedDnsFails := fmt.Sprintf("Packet dropped when sending traffic to %s on port %s/%s",
+		ipAddress, dstPort, proto)
 	if resultSending != expectedSending {
 		t.Fatalf("Expected: %v, but got result: %v", expectedDnsFails, resultDnsFails)
 	}

@@ -12,6 +12,8 @@ const (
 	testLogPrefix = "log-prefix"
 	testSrcIP     = "11.111.11.111"
 	testDstIP     = "22.222.22.222"
+	testDstPort   = "1234"
+	testProto     = "TCP"
 )
 
 // Test if PacketDrop.IsExpired() works
@@ -35,12 +37,14 @@ func TestParsingDropLog(t *testing.T) {
 	channel := make(chan PacketDrop, 100)
 	// need to use curTime because parse() will not insert expired packetDrop
 	curTime := time.Now().Format(PacketDropLogTimeLayout)
-	testLog := fmt.Sprintf("%s %s %s SRC=%s DST=%s", curTime, testHostname, testLogPrefix, testSrcIP, testDstIP)
+	testLog := fmt.Sprintf("%s %s %s SRC=%s DST=%s DPT=%s PROTO=%s", curTime, testHostname, testLogPrefix, testSrcIP, testDstIP, testDstPort, testProto)
 	expected := PacketDrop{
 		LogTime:  curTime,
 		HostName: testHostname,
 		SrcIP:    testSrcIP,
 		DstIP:    testDstIP,
+		DstPort:  testDstPort,
+		Proto:    testProto,
 	}
 	parse(testLogPrefix, testLog, channel)
 
