@@ -16,9 +16,9 @@ $ kubectl describe pods --namespace=YOUR_NAMESPACE
 Events:
   FirstSeen   LastSeen    Count   From                    Type          Reason          Message
   ---------   --------	  -----	  ----                    ----          ------          -------
-  1h          5s          10      kube-iptables-tailer    Warning       PacketDrop      Packet dropped when receiving traffic from example-service-2 (IP: 22.222.22.222).
+  1h          5s          10      kube-iptables-tailer    Warning       PacketDrop      Packet dropped when receiving traffic from example-service-2 (22.222.22.222) on port 5678/TCP.
   
-  3h          2m          5       kube-iptables-tailer    Warning       PacketDrop      Packet dropped when sending traffic to example-service-1 (IP: 11.111.11.111).
+  3h          2m          5       kube-iptables-tailer    Warning       PacketDrop      Packet dropped when sending traffic to example-service-1 (11.111.11.111) on port 1234/TCP.
 ```
 **NOTE**: Content under the sections `From`, `Reason`, and `Message` showing in the above output can be configured in your container spec file. Please refer to the corresponding [environment variables](#environment-variables) below for a more detailed explanation.
 
@@ -31,12 +31,12 @@ Events:
 
 Download the source code package:
 ```shell
-$ git clone github.com/box/kube-iptables-tailer
+$ git clone git@github.com:box/kube-iptables-tailer.git
 ```
 
 Build the container from the source code (make sure you have Docker running):
 ```shell
-$ cd $GOPATH/src/github.com/box/kube-iptables-tailer
+$ cd <path-to-the-source-code>
 $ make container
 ```
 
