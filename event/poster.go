@@ -101,13 +101,13 @@ func (poster *Poster) handle(packetDrop drop.PacketDrop) error {
 	srcName := getNamespaceOrHostName(srcPod, packetDrop.SrcIP, net.DefaultResolver)
 	dstName := getNamespaceOrHostName(dstPod, packetDrop.DstIP, net.DefaultResolver)
 	if srcPod != nil && !srcPod.Spec.HostNetwork {
-		message := getPacketDropMessage(dstName, packetDrop.DstIP, send)
+		message := getPacketDropMessage(dstName, packetDrop.DstIP, packetDrop.DstPort, packetDrop.Proto, send)
 		if err := poster.submitEvent(srcPod, message); err != nil {
 			return err
 		}
 	}
 	if dstPod != nil && !dstPod.Spec.HostNetwork {
-		message := getPacketDropMessage(srcName, packetDrop.SrcIP, receive)
+		message := getPacketDropMessage(srcName, packetDrop.SrcIP, packetDrop.DstPort, packetDrop.Proto, receive)
 		if err := poster.submitEvent(dstPod, message); err != nil {
 			return err
 		}

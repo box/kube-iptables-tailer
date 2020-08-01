@@ -142,6 +142,8 @@ func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string
 				return pod.Name
 			case "namespace":
 				return pod.Namespace
+			case "name_with_namespace":
+				return fmt.Sprintf("%s/%s", pod.Namespace, pod.Name)
 			}
 			return pod.Namespace
 		}
@@ -153,7 +155,7 @@ func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string
 }
 
 // Helper function to construct packet drop message
-func getPacketDropMessage(otherSideServiceName string, ip string, direction TrafficDirection) string {
+func getPacketDropMessage(otherSideServiceName string, ip string, port string, proto string, direction TrafficDirection) string {
 	var buffer bytes.Buffer
 	buffer.WriteString("Packet dropped")
 	// append traffic direction
@@ -169,6 +171,10 @@ func getPacketDropMessage(otherSideServiceName string, ip string, direction Traf
 		buffer.WriteString(ip)
 		buffer.WriteString(")")
 	}
+	buffer.WriteString(" on port ")
+	buffer.WriteString(port)
+	buffer.WriteString("/")
+	buffer.WriteString(proto)
 	return buffer.String()
 }
 
