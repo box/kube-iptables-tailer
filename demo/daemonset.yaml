@@ -12,7 +12,8 @@
       metadata:
         labels:
           app: "kube-iptables-tailer"
-      spec: 
+      spec:
+        serviceAccount: kube-iptables-tailer
         containers: 
           - name: "kube-iptables-tailer"
             command:
@@ -40,3 +41,40 @@
               path: "/var/log"
           - name: "service-logs"
             emptyDir: {}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kube-iptables-tailer
+  namespace: kube-system
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kube-iptables-tailer
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["v1"]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kube-iptables-tailer
+subjects:
+  - kind: ServiceAccount
+    name: kube-iptables-tailer
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: kube-iptables-tailer
+  apiGroup: rbac.authorization.k8s.io
