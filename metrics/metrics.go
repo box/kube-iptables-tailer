@@ -18,7 +18,7 @@ type Metrics struct {
 	packetDropsCount *prometheus.CounterVec
 }
 
-// Return the singleton instance of metrics
+// GetInstance returns the singleton instance of metrics
 func GetInstance() *Metrics {
 	once.Do(initMetricsSingleton) // thread-safe way to construct the singleton instance
 	return instance
@@ -43,13 +43,13 @@ func initMetricsSingleton() {
 	instance = &Metrics{packetDropsCount: packetDropCountsVec, registry: r}
 }
 
-// Return the handler of metrics
+// GetHandler returns the handler of metrics
 func (m *Metrics) GetHandler() http.Handler {
 	// need to specify registry to avoid getting extra data sent in prometheus
 	return promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{})
 }
 
-// Update the metrics by given service name
+// ProcessPacketDrop updates the metrics by given service name
 func (m *Metrics) ProcessPacketDrop(src, dst string) {
 	m.packetDropsCount.With(prometheus.Labels{
 		"src": src,

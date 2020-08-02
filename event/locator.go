@@ -3,7 +3,6 @@ package event
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"github.com/box/kube-iptables-tailer/util"
 	"github.com/golang/glog"
@@ -20,10 +19,12 @@ type DnsResolver interface {
 	LookupAddr(context context.Context, ip string) (names []string, err error)
 }
 
+// NodeGetter has an method to get a worker node in Kubernetes
 type NodeGetter interface {
 	Get(name string, options metav1.GetOptions) (*v1.Node, error)
 }
 
+// TrafficDirection is used while generating message for Kubernetes events
 type TrafficDirection int
 
 const (
@@ -44,6 +45,7 @@ func (td TrafficDirection) String() string {
 
 const indexerName = "podIp"
 
+// Locator has methods to work with locating Pods in Kubernetes
 type Locator interface {
 	Run(stopCh <-chan struct{})
 	LocatePod(ip string) (*v1.Pod, error)
@@ -54,9 +56,7 @@ type PodLocator struct {
 	informer cache.SharedIndexInformer
 }
 
-/*
- * Returns a locator that pulls pod data from the apiserver
- */
+// NewApiServerPodLocator returns a locator that pulls pod data from the apiserver
 func NewApiServerPodLocator(client *kubernetes.Clientset) (*PodLocator, error) {
 	listWatch := cache.NewListWatchFromClient(
 		client.CoreV1().RESTClient(), "pods", v1.NamespaceAll,
@@ -98,6 +98,7 @@ func podIPIndexer() func(obj interface{}) ([]string, error) {
 	return indexFunc
 }
 
+// Run process of locating Pods
 func (locator *PodLocator) Run(stopCh <-chan struct{}) {
 	go locator.informer.Run(stopCh)
 
@@ -107,10 +108,11 @@ func (locator *PodLocator) Run(stopCh <-chan struct{}) {
 	}
 }
 
+// LocatePod locates the pod by given IP address
 func (locator *PodLocator) LocatePod(ip string) (*v1.Pod, error) {
 	items, err := locator.informer.GetIndexer().ByIndex(indexerName, ip)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Error looking up pod: ip=%v", ip))
+		return nil, fmt.Errorf("error looking up Pod: ip=%v", ip)
 	} else if len(items) > 0 {
 		if pod, ok := items[0].(*v1.Pod); ok {
 			return pod, nil

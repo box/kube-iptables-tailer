@@ -43,6 +43,7 @@ const (
 	PodIdentifierLabel   = "POD_IDENTIFIER_LABEL"
 )
 
+// GetRequiredEnvString returns string environment variable of the given key
 func GetRequiredEnvString(key string) string {
 	val := os.Getenv(key)
 	if len(val) == 0 {
@@ -51,15 +52,7 @@ func GetRequiredEnvString(key string) string {
 	return val
 }
 
-func GetRequiredEnvInt(key string) int {
-	stringVal := GetRequiredEnvString(key)
-	intVal, err := strconv.Atoi(stringVal)
-	if err != nil {
-		log.Fatalf("Error converting environment variable %s to int: %v", stringVal, err)
-	}
-	return intVal
-}
-
+// GetRequiredEnvString returns integer environment variable of the given key or default value if key does not exist
 func GetEnvIntOrDefault(key string, def int) int {
 	if env := os.Getenv(key); env != "" {
 		val, err := strconv.Atoi(env)
@@ -72,6 +65,7 @@ func GetEnvIntOrDefault(key string, def int) int {
 	return def
 }
 
+// GetEnvStringOrDefault returns string environment variable of the given key or default value if key does not exist
 func GetEnvStringOrDefault(key string, def string) string {
 	if val := os.Getenv(key); len(val) > 0 {
 		return val
