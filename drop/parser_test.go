@@ -2,9 +2,10 @@ package drop
 
 import (
 	"fmt"
-	"github.com/box/kube-iptables-tailer/util"
 	"testing"
 	"time"
+
+	"github.com/box/kube-iptables-tailer/util"
 )
 
 const (
@@ -18,13 +19,13 @@ const (
 
 // Test if PacketDrop.IsExpired() works
 func TestPacketDropIsExpired(t *testing.T) {
-	expiredTime := util.GetExpiredTimeInString(util.DefaultPacketDropExpirationMinutes, PacketDropLogTimeLayout)
+	expiredTime := util.GetExpiredTimeIn(util.DefaultPacketDropExpirationMinutes)
 	expiredPacketDrop := PacketDrop{LogTime: expiredTime}
 	if !expiredPacketDrop.IsExpired() {
 		t.Fatal("Expected IsExpired() return true, got false")
 	}
 
-	curTime := time.Now().Format(PacketDropLogTimeLayout)
+	curTime := time.Now()
 	curPacketDrop := PacketDrop{LogTime: curTime}
 	if curPacketDrop.IsExpired() {
 		t.Fatal("Expected IsExpired() return false, got true")
@@ -36,8 +37,9 @@ func TestPacketDropIsExpired(t *testing.T) {
 func TestParsingDropLog(t *testing.T) {
 	channel := make(chan PacketDrop, 100)
 	// need to use curTime because parse() will not insert expired packetDrop
-	curTime := time.Now().Format(PacketDropLogTimeLayout)
-	testLog := fmt.Sprintf("%s %s %s SRC=%s DST=%s DPT=%s PROTO=%s", curTime, testHostname, testLogPrefix, testSrcIP, testDstIP, testDstPort, testProto)
+	curTime := time.Now().Truncate(time.Second)
+	logTime := curTime.Format(util.DefaultPacketDropLogTimeLayout)
+	testLog := fmt.Sprintf("%s %s %s SRC=%s DST=%s DPT=%s PROTO=%s", logTime, testHostname, testLogPrefix, testSrcIP, testDstIP, testDstPort, testProto)
 	expected := PacketDrop{
 		LogTime:  curTime,
 		HostName: testHostname,
@@ -46,7 +48,10 @@ func TestParsingDropLog(t *testing.T) {
 		DstPort:  testDstPort,
 		Proto:    testProto,
 	}
-	parse(testLogPrefix, testLog, channel)
+	err := parse(testLogPrefix, testLog, channel, util.DefaultPacketDropLogTimeLayout)
+	if err != nil {
+		t.Fatalf("Expected %+v, but got error %s", expected, err)
+	}
 
 	result := <-channel
 	if result != expected {
@@ -57,10 +62,10 @@ func TestParsingDropLog(t *testing.T) {
 // Test if packet parser works for outdated packet drop (should not add it to channel)
 func TestParsingExpiredPacketDropLog(t *testing.T) {
 	channel := make(chan PacketDrop, 100)
-	expiredTime := util.GetExpiredTimeInString(util.DefaultPacketDropExpirationMinutes, PacketDropLogTimeLayout)
+	expiredTime := util.GetExpiredTimeIn(util.DefaultPacketDropExpirationMinutes).Format(util.DefaultPacketDropLogTimeLayout)
 	expiredLog := fmt.Sprintf("%s %s %s SRC=%s DST=%s",
 		expiredTime, testHostname, testLogPrefix, testSrcIP, testDstIP)
-	parse(testLogPrefix, expiredLog, channel)
+	parse(testLogPrefix, expiredLog, channel, util.DefaultPacketDropLogTimeLayout)
 
 	select {
 	case result := <-channel:
@@ -74,15 +79,15 @@ func TestParsingExpiredPacketDropLog(t *testing.T) {
 func TestParsingBadPacketDropLog(t *testing.T) {
 	channel := make(chan PacketDrop)
 	// testing bad log without source IP
-	curTime := time.Now().Format(PacketDropLogTimeLayout)
+	curTime := time.Now().Format(util.DefaultPacketDropLogTimeLayout)
 	testLog1 := fmt.Sprintf("%s %s %s %s", curTime, testHostname, testLogPrefix, testDstIP)
-	err := parse(testLogPrefix, testLog1, channel)
+	err := parse(testLogPrefix, testLog1, channel, util.DefaultPacketDropLogTimeLayout)
 	if err == nil {
 		t.Fatalf("Expected error, but got error nil!")
 	}
 	// testing bad log without destination IP
 	testLog2 := fmt.Sprintf("%s %s %s %s", curTime, testHostname, testLogPrefix, testSrcIP)
-	err = parse(testLogPrefix, testLog2, channel)
+	err = parse(testLogPrefix, testLog2, channel, util.DefaultPacketDropLogTimeLayout)
 	if err == nil {
 		t.Fatalf("Expected error, but got error nil!")
 	}
@@ -91,9 +96,9 @@ func TestParsingBadPacketDropLog(t *testing.T) {
 // Test if packet parser works for none packet drop log (should just ignore and not return error)
 func TestParsingNonePacketDropLog(t *testing.T) {
 	channel := make(chan PacketDrop)
-	curTime := time.Now().Format(PacketDropLogTimeLayout)
+	curTime := time.Now().Format(util.DefaultPacketDropLogTimeLayout)
 	testLog := fmt.Sprintf("%s %s None Packet Drop Log", curTime, testHostname)
-	err := parse(testLogPrefix, testLog, channel)
+	err := parse(testLogPrefix, testLog, channel, util.DefaultPacketDropLogTimeLayout)
 
 	if err != nil {
 		t.Fatalf("Expected error nil, but got error %s", err)
@@ -108,7 +113,7 @@ func TestGetPacketDropLogFields(t *testing.T) {
 		t.Fatalf("Expected error from empty log, but got nil")
 	}
 
-	curTime := time.Now().Format(PacketDropLogTimeLayout)
+	curTime := time.Now().Format(util.DefaultPacketDropLogTimeLayout)
 	// missing IPs
 	packetDropLogMissingField := fmt.Sprintf("%s %s ", curTime, testHostname)
 	_, err = getPacketDropLogFields(packetDropLogMissingField)

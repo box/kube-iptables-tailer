@@ -3,21 +3,22 @@ package event
 import (
 	"errors"
 	"fmt"
+	"net"
+	"os"
+	"time"
+
 	"github.com/box/kube-iptables-tailer/drop"
 	"github.com/box/kube-iptables-tailer/metrics"
 	"github.com/box/kube-iptables-tailer/util"
 	"github.com/cenkalti/backoff"
 	"github.com/golang/glog"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/tools/reference"
-	"net"
-	"os"
-	"time"
 )
 
 // Poster handles submitting Kubernetes Events to Pods running in the cluster.
@@ -125,8 +126,7 @@ func (poster *Poster) shouldIgnore(packetDrop drop.PacketDrop) bool {
 		glog.Infof("Ignoring expired packet drop: packetDrop=%+v", packetDrop)
 		return true
 	}
-	// ignore if the event has been posted within the defined time period
-	logTime, _ := packetDrop.GetLogTime() //  the error would be handled in expiration check called above
+	logTime := packetDrop.GetLogTime() //  the error would be handled in expiration check called above
 	key := packetDrop.SrcIP + packetDrop.DstIP
 	lastPostedTime := poster.eventSubmitTimeMap[key]
 	repeatEventIntervalMinutes := float64(util.GetEnvIntOrDefault(

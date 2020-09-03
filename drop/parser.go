@@ -3,22 +3,22 @@ package drop
 import (
 	"errors"
 	"fmt"
-	"github.com/box/kube-iptables-tailer/util"
-	"github.com/golang/glog"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/box/kube-iptables-tailer/util"
+	"github.com/golang/glog"
 )
 
 const fieldSrcIP = "SRC"
 const fieldDstIP = "DST"
 const fieldDstPort = "DPT"
 const fieldProto = "PROTO"
-const PacketDropLogTimeLayout = "2006-01-02T15:04:05.000000-07:00"
 
 // PacketDrop is the result object parsed from single raw log containing information about an iptables packet drop.
 type PacketDrop struct {
-	LogTime  string
+	LogTime  time.Time
 	HostName string
 	SrcIP    string
 	DstIP    string
@@ -30,11 +30,7 @@ var fieldCount = reflect.ValueOf(PacketDrop{}).NumField()
 
 // Check if PacketDrop is expired
 func (pd PacketDrop) IsExpired() bool {
-	logTime, err := pd.GetLogTime()
-	if err != nil {
-		glog.Errorf("Error retrieving log time to check expiration: %+v", err)
-		return true // we consider it expired if we cannot parse the time
-	}
+	logTime := pd.GetLogTime()
 	curTime := time.Now()
 	expiredMinutes := float64(util.GetEnvIntOrDefault(
 		util.PacketDropExpirationMinutes, util.DefaultPacketDropExpirationMinutes))
@@ -42,14 +38,15 @@ func (pd PacketDrop) IsExpired() bool {
 }
 
 // Get the time object of PacketDrop log time
-func (pd PacketDrop) GetLogTime() (time.Time, error) {
-	return time.Parse(PacketDropLogTimeLayout, pd.LogTime)
+func (pd PacketDrop) GetLogTime() time.Time {
+	return pd.LogTime
 }
 
 // Parse the logs from given channel and insert objects of PacketDrop as parsing result to another channel
 func RunParsing(logPrefix string, logChangeCh <-chan string, packetDropCh chan<- PacketDrop) {
+	logTimeLayout := util.GetEnvStringOrDefault(util.PacketDropLogTimeLayout, util.DefaultPacketDropLogTimeLayout)
 	for log := range logChangeCh {
-		parseErr := parse(logPrefix, log, packetDropCh)
+		parseErr := parse(logPrefix, log, packetDropCh, logTimeLayout)
 		if parseErr != nil {
 			// report the current error log but continue the parsing process
 			glog.Errorf("Cannot parse the log: %s, error: %+v", log, parseErr)
@@ -58,14 +55,14 @@ func RunParsing(logPrefix string, logChangeCh <-chan string, packetDropCh chan<-
 }
 
 // Parse the given log, and insert the result to PacketDrop's channel if it's not expired
-func parse(logPrefix, log string, packetDropCh chan<- PacketDrop) error {
+func parse(logPrefix, log string, packetDropCh chan<- PacketDrop, logTimeLayout string) error {
 	// only parse the required packet drop logs
 	if !isRequiredPacketDropLog(logPrefix, log) {
 		return nil
 	}
 	glog.V(4).Infof("Parsing new packet drop: log=%+v", log)
 	// parse the log and get an object of PacketDrop as result
-	packetDrop, err := getPacketDrop(log)
+	packetDrop, err := getPacketDrop(log, logTimeLayout)
 	if err != nil {
 		return err
 	}
@@ -88,7 +85,7 @@ func isRequiredPacketDropLog(logPrefix, log string) bool {
 }
 
 // Return a PacketDrop object constructed from given PacketDropLog
-func getPacketDrop(packetDropLog string) (PacketDrop, error) {
+func getPacketDrop(packetDropLog, logTimeLayout string) (PacketDrop, error) {
 	// object PacketDrop needs at least 4 different fields
 	logFields, err := getPacketDropLogFields(packetDropLog)
 	if err != nil {
@@ -96,7 +93,13 @@ func getPacketDrop(packetDropLog string) (PacketDrop, error) {
 	}
 
 	// get log time and host name
-	logTime, hostName := logFields[0], logFields[1]
+
+	logTime, err := time.Parse(logTimeLayout, logFields[0])
+	if err != nil {
+		return PacketDrop{}, err
+	}
+
+	hostName := logFields[1]
 
 	// get src and dst IPs
 	srcIP, err := getFieldValue(logFields, fieldSrcIP)

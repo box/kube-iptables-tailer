@@ -43,7 +43,7 @@ func (watcher *JournalWatcher) Run(logChangeCh chan<- string) {
 
 			return strings.Join([]string{
 				time.Unix(0, int64(entry.RealtimeTimestamp)*int64(time.Microsecond)).
-					Format(PacketDropLogTimeLayout),
+					Format(DefaultPacketDropLogTimeLayout),
 				hostname,
 				msg,
 			}, " ") + "\n", nil
