@@ -4,15 +4,16 @@ import (
 	"bufio"
 	"errors"
 	"flag"
-	"github.com/box/kube-iptables-tailer/drop"
-	"github.com/box/kube-iptables-tailer/util"
-	"github.com/cenkalti/backoff"
-	"k8s.io/api/core/v1"
 	"math"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/box/kube-iptables-tailer/drop"
+	"github.com/box/kube-iptables-tailer/util"
+	"github.com/cenkalti/backoff"
+	v1 "k8s.io/api/core/v1"
 )
 
 type DummyLocator struct{}
@@ -26,7 +27,7 @@ func (loc *DummyLocator) LocatePod(ip string) (*v1.Pod, error) {
 
 // Helper function for testing
 func getPresentPacketDrop() drop.PacketDrop {
-	curTime := time.Now().Format(drop.PacketDropLogTimeLayout)
+	curTime := time.Now()
 	packetDrop := drop.PacketDrop{LogTime: curTime}
 	return packetDrop
 }
@@ -37,8 +38,8 @@ func TestShouldIgnoreTimeout(t *testing.T) {
 	poster := Poster{} // cannot use InitPoster() directly because the test may not have k8s environment
 
 	// create an obsolete time by subtracting the eventDurationMinutes
-	expiredTime := util.GetExpiredTimeInString(
-		util.DefaultPacketDropExpirationMinutes, drop.PacketDropLogTimeLayout)
+	expiredTime := util.GetExpiredTimeIn(
+		util.DefaultPacketDropExpirationMinutes)
 	timedOutPacketDrop := drop.PacketDrop{LogTime: expiredTime}
 
 	result := poster.shouldIgnore(timedOutPacketDrop)
@@ -52,8 +53,7 @@ func TestShouldIgnoreSameEvent(t *testing.T) {
 	poster := Poster{}
 	poster.eventSubmitTimeMap = make(map[string]time.Time)
 	curTime := time.Now()
-	logTime := curTime.Format(drop.PacketDropLogTimeLayout)
-	packetDrop := drop.PacketDrop{LogTime: logTime, SrcIP: "1.1.1", DstIP: "2.2.2"}
+	packetDrop := drop.PacketDrop{LogTime: curTime, SrcIP: "1.1.1", DstIP: "2.2.2"}
 	// insert a mocked time when same event was submitted recently (within the interval threshold)
 	poster.eventSubmitTimeMap[packetDrop.SrcIP+packetDrop.DstIP] =
 		curTime.Add(-util.DefaultRepeatedEventIntervalMinutes*time.Minute + time.Minute)

@@ -3,8 +3,9 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/golang/glog"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 func PrettyPrint(i interface{}) string {
@@ -18,8 +19,8 @@ func PrettyPrint(i interface{}) string {
 }
 
 // Utility functions for packet drop testing
-func GetExpiredTimeInString(expirationMinutes int, timeFormat string) string {
+func GetExpiredTimeIn(expirationMinutes int) time.Time {
 	duration := time.Duration(expirationMinutes) * time.Minute
 	// add one more minute than given expiration to make sure the time is expired
-	return time.Now().Add(-duration - time.Minute).Format(timeFormat)
+	return time.Now().Add(-duration - time.Minute)
 }
