@@ -6,12 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/box/kube-iptables-tailer/util"
-	"github.com/golang/glog"
+	"go.uber.org/zap"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+	"os"
 	"time"
 )
 
@@ -72,11 +73,16 @@ func getPodLocator(listerWatcher cache.ListerWatcher) *PodLocator {
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			glog.V(10).Infof("AddFunc: obj=%+v", util.PrettyPrint(obj))
+			zap.L().Debug(
+				"Add func",
+				zap.String("object", fmt.Sprintf("%+v", util.PrettyPrint(obj))),
+			)
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			glog.V(10).Infof("UpdateFunc: oldObj=%+v, newObj=%+v",
-				util.PrettyPrint(oldObj), util.PrettyPrint(newObj))
+			zap.L().Debug("Update func",
+				zap.String("old_object", fmt.Sprintf("%+v", util.PrettyPrint(oldObj))),
+				zap.String("new_object", fmt.Sprintf("%+v", util.PrettyPrint(newObj))),
+			)
 		},
 	})
 
@@ -88,7 +94,11 @@ func getPodLocator(listerWatcher cache.ListerWatcher) *PodLocator {
 func podIPIndexer() func(obj interface{}) ([]string, error) {
 	indexFunc := func(obj interface{}) ([]string, error) {
 		if pod, ok := obj.(*v1.Pod); ok {
-			glog.V(5).Infof("Indexing pod: name=%v, ip=%v", pod.Name, pod.Status.PodIP)
+			zap.L().Info("Indexing pod",
+				zap.String("pod_name", pod.Name),
+				zap.String("pod_namespace", pod.Namespace),
+				zap.String("pod_ip", pod.Status.PodIP),
+			)
 			return []string{pod.Status.PodIP}, nil
 		} else {
 			return []string{""}, fmt.Errorf("unable to cast object to *v1.Pod: obj=%+v",
@@ -103,7 +113,7 @@ func (locator *PodLocator) Run(stopCh <-chan struct{}) {
 
 	// wait for the cache to synchronize for the first time
 	if !cache.WaitForCacheSync(stopCh) {
-		glog.Fatalf("Timed out waiting for pod cache to sync.")
+		zap.L().Fatal("Timed out waiting for pod cache to sync")
 	}
 }
 
@@ -113,10 +123,17 @@ func (locator *PodLocator) LocatePod(ip string) (*v1.Pod, error) {
 		return nil, errors.New(fmt.Sprintf("Error looking up pod: ip=%v", ip))
 	} else if len(items) > 0 {
 		if pod, ok := items[0].(*v1.Pod); ok {
+			zap.L().Debug(
+				"Pod found",
+				zap.String("pod_name", pod.Name),
+				zap.String("pod_namespace", pod.Namespace),
+				zap.String("pod_ip", ip),
+				zap.String("pod_node", pod.Spec.NodeName),
+			)
 			return pod, nil
 		}
 	}
-	glog.Warningf("Pod not found: ip=%v", ip)
+	zap.L().Warn("Pod not found", zap.String("ip", ip))
 	return nil, nil
 }
 
@@ -130,6 +147,13 @@ func (locator *PodLocator) LocatePod(ip string) (*v1.Pod, error) {
 func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string {
 	if pod != nil {
 		if !pod.Spec.HostNetwork {
+			zap.L().Debug(
+				"Pod does not have host networking",
+				zap.String("pod_name", pod.Name),
+				zap.String("pod_namespace", pod.Namespace),
+				zap.String("pod_ip", pod.Status.PodIP),
+				zap.String("pod_node", pod.Spec.NodeName),
+				)
 			identifier := util.GetEnvStringOrDefault(util.PodIdentifier, util.DefaultPodIdentifier)
 			switch identifier {
 			case "name":
@@ -148,14 +172,24 @@ func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string
 			return pod.Namespace
 		}
 		if pod.Spec.NodeName != "" {
+			zap.L().Debug(
+				"Pod has host networking, using node value",
+				zap.String("pod_name", pod.Name),
+				zap.String("pod_namespace", pod.Namespace),
+				zap.String("pod_ip", pod.Status.PodIP),
+				zap.String("pod_node", pod.Spec.NodeName),
+			)
 			return pod.Spec.NodeName
 		}
 	}
+	zap.L().Debug("Pod spec not found, using reverse dns lookup", zap.String("ip", ip))
 	return getHostName(resolver, ip)
 }
 
 // Helper function to construct packet drop message
 func getPacketDropMessage(otherSideServiceName string, ip string, port string, proto string, direction TrafficDirection) string {
+	podIp := os.Getenv("POD_IP")
+	podName := os.Getenv("K8S_POD_NAME")
 	var buffer bytes.Buffer
 	buffer.WriteString("Packet dropped")
 	// append traffic direction
@@ -167,26 +201,28 @@ func getPacketDropMessage(otherSideServiceName string, ip string, port string, p
 	// append other side's service name
 	buffer.WriteString(otherSideServiceName)
 	if otherSideServiceName != ip && ip != "" {
-		buffer.WriteString(" (")
-		buffer.WriteString(ip)
-		buffer.WriteString(")")
+		buffer.WriteString(fmt.Sprintf(" (%s)", ip))
 	}
-	buffer.WriteString(" on port ")
-	buffer.WriteString(port)
-	buffer.WriteString("/")
-	buffer.WriteString(proto)
+	buffer.WriteString(fmt.Sprintf(" on port %s/%s (emitted from: %s/%s)", port, proto, podName, podIp))
 	return buffer.String()
 }
 
 // Get the host name of given ip from dns, return IP address if host name cannot be found
 func getHostName(resolver DnsResolver, ipAddress string) string {
+	zap.L().Debug("Performing dns lookup")
 	addr, err := resolver.LookupAddr(context.Background(), ipAddress)
 	if err != nil || len(addr) == 0 {
 		if err != nil {
-			glog.Errorf("Unable to resolve address: ip=%s, error=%+v", ipAddress, err)
+			zap.L().Error(
+				"Unable to resolve address",
+				zap.String("ip", ipAddress),
+				zap.String("error", err.Error()),
+			)
 		}
+		zap.L().Debug("fallback, using ip address", zap.String("ip", ipAddress))
 		return ipAddress
 	}
 
+	zap.L().Debug("Using ip address from lookup", zap.String("ip", addr[0]))
 	return addr[0] // currently returning the first host name found
 }

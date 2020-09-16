@@ -3,15 +3,14 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"time"
-
-	"github.com/golang/glog"
 )
 
 func PrettyPrint(i interface{}) string {
 	s, err := json.MarshalIndent(i, "", "  ")
 	if err != nil {
-		glog.Errorf("Error marshaling JSON: obj=%+v", i)
+		zap.L().Error("Error marshaling JSON", zap.String("object", fmt.Sprintf("%+v", i)))
 		return fmt.Sprintf("%+v", i)
 	} else {
 		return string(s)
