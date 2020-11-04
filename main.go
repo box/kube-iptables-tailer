@@ -29,8 +29,6 @@ func main() {
 	zap.ReplaceGlobals(logger)
 	defer logger.Sync()
 
-	logger.Debug("derrrp")
-
 	flag.Parse()
 
 	stopCh := make(chan struct{})

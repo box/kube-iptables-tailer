@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"os"
 	"time"
 )
 
@@ -188,8 +187,6 @@ func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string
 
 // Helper function to construct packet drop message
 func getPacketDropMessage(otherSideServiceName string, ip string, port string, proto string, direction TrafficDirection) string {
-	podIp := os.Getenv("POD_IP")
-	podName := os.Getenv("K8S_POD_NAME")
 	var buffer bytes.Buffer
 	buffer.WriteString("Packet dropped")
 	// append traffic direction
@@ -203,7 +200,7 @@ func getPacketDropMessage(otherSideServiceName string, ip string, port string, p
 	if otherSideServiceName != ip && ip != "" {
 		buffer.WriteString(fmt.Sprintf(" (%s)", ip))
 	}
-	buffer.WriteString(fmt.Sprintf(" on port %s/%s (emitted from: %s/%s)", port, proto, podName, podIp))
+	buffer.WriteString(fmt.Sprintf(" on port %s/%s", port, proto))
 	return buffer.String()
 }
 
