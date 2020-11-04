@@ -74,7 +74,7 @@ func (poster *Poster) Run(stopCh <-chan struct{}, packetDropCh <-chan drop.Packe
 				zap.Object("packet_drop", &packetDrop),
 				zap.Float64("retry", t.Seconds()),
 				zap.String("error", err.Error()),
-				)
+			)
 		}
 
 		if err := backoff.RetryNotify(retryOperation, poster.backoff, errorNotifier); err != nil {

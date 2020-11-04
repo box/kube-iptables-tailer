@@ -9,12 +9,17 @@ import (
 )
 
 const (
-	testHostname  = "hostname"
-	testLogPrefix = "log-prefix"
-	testSrcIP     = "11.111.11.111"
-	testDstIP     = "22.222.22.222"
-	testDstPort   = "1234"
-	testProto     = "TCP"
+	testHostname          = "hostname"
+	testLogPrefix         = "log-prefix"
+	testSrcIP             = "11.111.11.111"
+	testSrcPort           = "56789"
+	testDstIP             = "22.222.22.222"
+	testDstPort           = "1234"
+	testProto             = "TCP"
+	testInterfaceReceived = "eth0"
+	testInterfaceSent     = "eth1"
+	testMacAddress        = "56:22:aa:30:c4:fe:c6:ba:6e:31:56:c9:08:00"
+	testPacketTtl         = "63"
 )
 
 // Test if PacketDrop.IsExpired() works
@@ -39,14 +44,19 @@ func TestParsingDropLog(t *testing.T) {
 	// need to use curTime because parse() will not insert expired packetDrop
 	curTime := time.Now().Truncate(time.Second)
 	logTime := curTime.Format(util.DefaultPacketDropLogTimeLayout)
-	testLog := fmt.Sprintf("%s %s %s SRC=%s DST=%s DPT=%s PROTO=%s", logTime, testHostname, testLogPrefix, testSrcIP, testDstIP, testDstPort, testProto)
+	testLog := fmt.Sprintf("%s %s %s SRC=%s SPT=%s DST=%s DPT=%s PROTO=%s IN=%s OUT=%s MAC=%s TTL=%s", logTime, testHostname, testLogPrefix, testSrcIP, testSrcPort, testDstIP, testDstPort, testProto, testInterfaceReceived, testInterfaceSent, testMacAddress, testPacketTtl)
 	expected := PacketDrop{
-		LogTime:  curTime,
-		HostName: testHostname,
-		SrcIP:    testSrcIP,
-		DstIP:    testDstIP,
-		DstPort:  testDstPort,
-		Proto:    testProto,
+		LogTime:           curTime,
+		HostName:          testHostname,
+		SrcIP:             testSrcIP,
+		SrcPort:           testSrcPort,
+		DstIP:             testDstIP,
+		DstPort:           testDstPort,
+		Proto:             testProto,
+		InterfaceReceived: testInterfaceReceived,
+		InterfaceSent:     testInterfaceSent,
+		MacAddress:        testMacAddress,
+		Ttl:               testPacketTtl,
 	}
 	err := parse(testLogPrefix, testLog, channel, util.DefaultPacketDropLogTimeLayout)
 	if err != nil {

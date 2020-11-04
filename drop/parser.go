@@ -24,17 +24,17 @@ const fieldMacAddress = "MAC"
 
 // PacketDrop is the result object parsed from single raw log containing information about an iptables packet drop.
 type PacketDrop struct {
-	LogTime  time.Time
-	HostName string
-	SrcIP    string
-	SrcPort  string
-	DstIP    string
-	DstPort  string
-	Proto    string
+	LogTime           time.Time
+	HostName          string
+	SrcIP             string
+	SrcPort           string
+	DstIP             string
+	DstPort           string
+	Proto             string
 	InterfaceReceived string
 	InterfaceSent     string
-	MacAddress string
-	Ttl      string
+	MacAddress        string
+	Ttl               string
 }
 
 var fieldCount = reflect.ValueOf(PacketDrop{}).NumField()
@@ -135,7 +135,7 @@ func getPacketDrop(packetDropLog, logTimeLayout string) (PacketDrop, error) {
 		return PacketDrop{}, err
 	}
 	srcPort, err := getFieldValue(logFields, fieldSrcPort)
-	if err != nil{
+	if err != nil {
 		return PacketDrop{}, err
 	}
 	dstIP, err := getFieldValue(logFields, fieldDstIP)
@@ -169,17 +169,17 @@ func getPacketDrop(packetDropLog, logTimeLayout string) (PacketDrop, error) {
 	}
 
 	pd := PacketDrop{
-			LogTime:  logTime,
-			HostName: hostName,
-			SrcIP:    srcIP,
-			SrcPort:  srcPort,
-			DstIP:    dstIP,
-			DstPort:  dstPort,
-			Proto:    proto,
-			InterfaceReceived: interfaceReceived,
-			InterfaceSent: interfaceSent,
-			MacAddress: macAddress,
-			Ttl: ttl}
+		LogTime:           logTime,
+		HostName:          hostName,
+		SrcIP:             srcIP,
+		SrcPort:           srcPort,
+		DstIP:             dstIP,
+		DstPort:           dstPort,
+		Proto:             proto,
+		InterfaceReceived: interfaceReceived,
+		InterfaceSent:     interfaceSent,
+		MacAddress:        macAddress,
+		Ttl:               ttl}
 
 	zap.L().Info("Parsed new packet", zap.String("raw", packetDropLog), zap.Object("packet_drop", &pd))
 

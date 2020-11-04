@@ -27,7 +27,7 @@ const (
 	MetricsServerPort        = "METRICS_SERVER_PORT"
 	DefaultMetricsServerPort = 9090
 
-	LogLevel = "LOG_LEVEL"
+	LogLevel        = "LOG_LEVEL"
 	DefaultLogLevel = "INFO"
 
 	PacketDropChannelBufferSize         = "PACKET_DROP_CHANNEL_BUFFER_SIZE"

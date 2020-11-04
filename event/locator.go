@@ -152,7 +152,7 @@ func getNamespaceOrHostName(pod *v1.Pod, ip string, resolver DnsResolver) string
 				zap.String("pod_namespace", pod.Namespace),
 				zap.String("pod_ip", pod.Status.PodIP),
 				zap.String("pod_node", pod.Spec.NodeName),
-				)
+			)
 			identifier := util.GetEnvStringOrDefault(util.PodIdentifier, util.DefaultPodIdentifier)
 			switch identifier {
 			case "name":
