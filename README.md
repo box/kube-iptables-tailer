@@ -77,14 +77,15 @@ We suggest running kube-iptables-tailer as a [Daemonset](https://kubernetes.io/d
 * `POD_IDENTIFIER`: (string, default: **namespace**) How to identify pods in the logs. `name`, `label`, `namespace` or `name_with_namespace` are currently supported. If `label`, uses the value of the label key specified by `POD_IDENTIFIER_LABEL`.
 * `POD_IDENTIFIER_LABEL`: (string) Pod label key with which to identify pods if `POD_IDENTIFIER` is set to `label`. If this label doesn't exist on the pod, the pod name is used instead.
 * `PACKET_DROP_LOG_TIME_LAYOUT`: (string) [Golang Time layout](https://godoc.org/time#Parse) used to parse the log time
+* `LOG_LEVEL`: (string, default: **info**) Log level. `debug`, `info`, `warn`, `error` are currently supported.
 
-### Metrics
+## Metrics
 Metrics are implemented by Prometheus, which are hosted on the web server at `/metrics`. The metrics have a name `packet_drops_count` and counter with the following tags:
 * `src`: The namespace of sender Pod involved with a packet drop.
 * `dst`: The namespace of receiver Pod involved with a packet drop.
 
 ### Logging
-Logging is implemented using [glog](https://godoc.org/github.com/golang/glog). To change the output directory of logs, you can mount an [emptyDir](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir) as a volume (where containers can have read and write access of the files inside) and add `--log_dir` as a command argument. Refer to [daemonset.yaml](demo/daemonset.yaml) provided as an example.
+Logging uses the [zap](https://github.com/uber-go/zap) library to provide a structured log output.
 
 ## Contribution
 All contributions are welcome to this project! Please review our [contributing guidelines](CONTRIBUTING.md) to facilitate the process of your contribution getting mereged.

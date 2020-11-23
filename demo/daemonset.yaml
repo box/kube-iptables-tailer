@@ -18,9 +18,9 @@
           - name: "kube-iptables-tailer"
             command:
               - "/kube-iptables-tailer"
-              - "--log_dir=/my-service-logs" # change the output directory of service logs
-              - "--v=4" # enable V-leveled logging at this level
-            env: 
+            env:
+              - name: LOG_LEVEL
+                value: info
               - name: "IPTABLES_LOG_PATH"
                 value: "/var/log/iptables.log"
               - name: "IPTABLES_LOG_PREFIX"
@@ -31,16 +31,11 @@
               - name: "iptables-logs"
                 mountPath: "/var/log"
                 readOnly: true
-              - name: "service-logs"
-                mountPath: "/my-service-logs"
-
         volumes:
           - name: "iptables-logs"
             hostPath: 
               # absolute path of the directory containing iptables log file on your host
               path: "/var/log"
-          - name: "service-logs"
-            emptyDir: {}
 
 ---
 

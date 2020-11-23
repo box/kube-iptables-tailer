@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/golang/glog"
+	"go.uber.org/zap"
 	"io"
 	"os"
 	"time"
@@ -29,7 +29,6 @@ func InitWatcher(watchFileName string, watchInterval time.Duration) *Watcher {
 // Run the watcher and insert newly found logs into given channel
 func (watcher *Watcher) Run(logChangeCh chan<- string) {
 	for range time.Tick(watcher.watchInterval) {
-		glog.Infoln("Watching logs...")
 		// check the file inside loop to get updated content at every watch interval
 		watcher.checkFile(logChangeCh)
 	}
@@ -39,13 +38,16 @@ func (watcher *Watcher) Run(logChangeCh chan<- string) {
 func (watcher *Watcher) checkFile(logChangeCh chan<- string) {
 	file, err := os.Open(watcher.watchFileName)
 	if err != nil {
-		glog.Errorf("Failed to open the file=%s, error=%v", watcher.watchFileName, err)
+		zap.L().Error("Failed to open file",
+			zap.String("file", watcher.watchFileName),
+			zap.String("error", err.Error()),
+		)
 		return
 	}
 	defer closeFile(file)
 	checkErr := watcher.check(file, logChangeCh)
 	if checkErr != nil {
-		glog.Errorf("Failed to check the content of file, error: %+v", checkErr)
+		zap.L().Error("Failed to check the contents of file", zap.String("error", checkErr.Error()))
 	}
 }
 
@@ -107,6 +109,6 @@ func (watcher *Watcher) reset(fingerprint string) {
 func closeFile(f *os.File) {
 	err := f.Close()
 	if err != nil {
-		glog.Errorf("Error while closing the file: %+v", err)
+		zap.L().Error("Error while closing file", zap.String("error", err.Error()))
 	}
 }

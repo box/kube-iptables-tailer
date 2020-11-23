@@ -3,6 +3,7 @@ package event
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"os"
 	"time"
@@ -11,7 +12,6 @@ import (
 	"github.com/box/kube-iptables-tailer/metrics"
 	"github.com/box/kube-iptables-tailer/util"
 	"github.com/cenkalti/backoff"
-	"github.com/golang/glog"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -69,14 +69,20 @@ func (poster *Poster) Run(stopCh <-chan struct{}, packetDropCh <-chan drop.Packe
 		}
 
 		errorNotifier := func(err error, t time.Duration) {
-			glog.Errorf("Error retrying packet drop handling, backing off: "+
-				"packetDrop=%+v, retryIn=%v secs, error=%v",
-				packetDrop, err, t.Seconds())
+			zap.L().Error(
+				"Error retrying packet drop handling, backing off",
+				zap.Object("packet_drop", &packetDrop),
+				zap.Float64("retry", t.Seconds()),
+				zap.String("error", err.Error()),
+			)
 		}
 
 		if err := backoff.RetryNotify(retryOperation, poster.backoff, errorNotifier); err != nil {
-			glog.Errorf("Error retrying packet drop handling, giving up: "+
-				"packetDrop=%+v, error=%v", packetDrop, err)
+			zap.L().Error(
+				"Error retrying packet drop handling, giving up",
+				zap.Object("packet_drop", &packetDrop),
+				zap.String("error", err.Error()),
+			)
 		}
 
 		// reset the backoff to handle the next packet drop
@@ -123,7 +129,7 @@ func (poster *Poster) handle(packetDrop drop.PacketDrop) error {
 func (poster *Poster) shouldIgnore(packetDrop drop.PacketDrop) bool {
 	// ignore if the given packetDrop is out of date
 	if packetDrop.IsExpired() {
-		glog.Infof("Ignoring expired packet drop: packetDrop=%+v", packetDrop)
+		zap.L().Debug("Ignoring expired packet drop", zap.Object("packet_drop", &packetDrop))
 		return true
 	}
 	logTime := packetDrop.GetLogTime() //  the error would be handled in expiration check called above
@@ -132,7 +138,7 @@ func (poster *Poster) shouldIgnore(packetDrop drop.PacketDrop) bool {
 	repeatEventIntervalMinutes := float64(util.GetEnvIntOrDefault(
 		util.RepeatedEventIntervalMinutes, util.DefaultRepeatedEventIntervalMinutes))
 	if !lastPostedTime.IsZero() && logTime.Sub(lastPostedTime).Minutes() <= repeatEventIntervalMinutes {
-		glog.Infof("Ignoring duplicate packet drop: packetDrop=%+v", packetDrop)
+		zap.L().Debug("Ignoring duplicate packet drop", zap.Object("packet_drop", &packetDrop))
 		return true
 	}
 
@@ -147,8 +153,7 @@ func (poster Poster) submitEvent(pod *v1.Pod, message string) error {
 	}
 	reason := util.GetEnvStringOrDefault(util.KubeEventDisplayReason, util.DefaultKubeEventDisplayReason)
 	poster.recorder.Event(ref, v1.EventTypeWarning, reason, message)
-	glog.Infof("Submitted event: pod=%s, message=%s", ref.Name, message)
-
+	zap.L().Info("Submitted event", zap.String("pod_name", ref.Name), zap.String("event_message", message))
 	return nil
 }
 
@@ -176,7 +181,7 @@ func initKubeClient() (*kubernetes.Clientset, error) {
 // Init Event Recorder for poster object
 func initEventRecorder(kubeClient *kubernetes.Clientset) record.EventRecorder {
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(glog.V(5).Infof)
+	eventBroadcaster.StartLogging(zap.S().Infof)
 	eventBroadcaster.StartRecordingToSink(
 		&typedcorev1.EventSinkImpl{Interface: kubeClient.CoreV1().Events("")})
 	component := util.GetEnvStringOrDefault(

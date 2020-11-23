@@ -7,7 +7,9 @@ import (
 	"github.com/box/kube-iptables-tailer/event"
 	"github.com/box/kube-iptables-tailer/metrics"
 	"github.com/box/kube-iptables-tailer/util"
-	"github.com/golang/glog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"log"
 	"net/http"
 	"os"
 	"sync"
@@ -15,6 +17,18 @@ import (
 )
 
 func main() {
+	loggerCfg := zap.NewProductionConfig()
+	loggerCfg.EncoderConfig.TimeKey = "timestamp"
+	loggerCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	level := util.GetEnvStringOrDefault(util.LogLevel, util.DefaultLogLevel)
+	loggerCfg.Level.UnmarshalText([]byte(level))
+	logger, err := loggerCfg.Build()
+	if err != nil {
+		log.Fatalf("can't initialize zap logger: %v", err)
+	}
+	zap.ReplaceGlobals(logger)
+	defer logger.Sync()
+
 	flag.Parse()
 
 	stopCh := make(chan struct{})
@@ -50,7 +64,7 @@ func startMetricsServer(port int) {
 	http.Handle("/metrics", metrics.GetInstance().GetHandler())
 	err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
-		glog.Fatal(err) // exit the program if it fails to serve metrics
+		zap.L().Fatal(err.Error())
 	}
 }
 
@@ -59,7 +73,7 @@ func startPoster(packetDropCh <-chan drop.PacketDrop, stopCh <-chan struct{}) {
 	poster, err := event.InitPoster()
 	if err != nil {
 		// cannot run the service without poster being created successfully
-		glog.Fatal("Cannot init event poster", err)
+		zap.L().Fatal("Cannot init event poster", zap.String("error", err.Error()))
 	}
 	poster.Run(stopCh, packetDropCh)
 }
