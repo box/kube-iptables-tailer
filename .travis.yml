@@ -1,7 +1,7 @@
 language: go
 go:
-  - 1.11.5
-install: 
+  - 1.13
+install:
   - echo "remove default travis_install to avoid getting workspace dirty with go dependency"
 script:
   - make test-unit
