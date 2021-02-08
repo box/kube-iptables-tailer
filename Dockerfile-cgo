@@ -1,8 +1,6 @@
 FROM ubuntu as builder
 RUN apt-get update
-RUN apt-get install -y golang
-RUN apt-get install -y git
-RUN apt-get install -y libsystemd-dev
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y golang git libsystemd-dev make
 ENV GOPATH /root/go
 WORKDIR $GOPATH/src/github.com/box/kube-iptables-tailer
 COPY . $GOPATH/src/github.com/box/kube-iptables-tailer

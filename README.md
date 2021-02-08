@@ -23,7 +23,7 @@ Events:
 **NOTE**: Content under the sections `From`, `Reason`, and `Message` showing in the above output can be configured in your container spec file. Please refer to the corresponding [environment variables](#environment-variables) below for a more detailed explanation.
 
 ## Requirements
-* [Go (1.11+)](https://golang.org/dl/)
+* [Go (1.13+)](https://golang.org/dl/)
 * [Docker (17.05+)](https://www.docker.com/get-started)
 * [Kubernetes (1.11+)](https://kubernetes.io/docs/setup/)
 
