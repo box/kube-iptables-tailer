@@ -5,14 +5,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/box/kube-iptables-tailer/util"
 	"go.uber.org/zap"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-	"time"
 )
 
 // DnsResolver allows for mocking out the functionality of net.DefaultResolver when testing getPacketDropMessage()
@@ -210,7 +211,7 @@ func getHostName(resolver DnsResolver, ipAddress string) string {
 	addr, err := resolver.LookupAddr(context.Background(), ipAddress)
 	if err != nil || len(addr) == 0 {
 		if err != nil {
-			zap.L().Error(
+			zap.L().Info(
 				"Unable to resolve address",
 				zap.String("ip", ipAddress),
 				zap.String("error", err.Error()),

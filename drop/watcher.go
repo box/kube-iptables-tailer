@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 const fingerprintSize = 64 // using the first log in your iptables log file (should have length > 64) as fingerprint
@@ -18,6 +19,8 @@ type Watcher struct {
 	watchInterval    time.Duration
 	lastReadPosition int64
 	curFingerprint   string
+
+	failedOpenfile bool
 }
 
 // Init a watcher object and return its pointer
@@ -38,12 +41,19 @@ func (watcher *Watcher) Run(logChangeCh chan<- string) {
 func (watcher *Watcher) checkFile(logChangeCh chan<- string) {
 	file, err := os.Open(watcher.watchFileName)
 	if err != nil {
-		zap.L().Error("Failed to open file",
-			zap.String("file", watcher.watchFileName),
-			zap.String("error", err.Error()),
-		)
+		if !watcher.failedOpenfile {
+			zap.L().Error("Failed to open file",
+				zap.String("file", watcher.watchFileName),
+				zap.String("error", err.Error()),
+			)
+		}
+
+		watcher.failedOpenfile = true
 		return
 	}
+
+	watcher.failedOpenfile = false
+
 	defer closeFile(file)
 	checkErr := watcher.check(file, logChangeCh)
 	if checkErr != nil {
