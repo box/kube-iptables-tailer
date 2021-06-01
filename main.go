@@ -12,6 +12,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -22,6 +23,9 @@ func main() {
 	loggerCfg.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	level := util.GetEnvStringOrDefault(util.LogLevel, util.DefaultLogLevel)
 	loggerCfg.Level.UnmarshalText([]byte(level))
+	if outputPaths, ok := os.LookupEnv("SERVICE_LOG_PATHS"); ok {
+		loggerCfg.OutputPaths = strings.Split(outputPaths, ",")
+	}
 	logger, err := loggerCfg.Build()
 	if err != nil {
 		log.Fatalf("can't initialize zap logger: %v", err)
