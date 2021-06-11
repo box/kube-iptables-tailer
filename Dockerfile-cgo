@@ -1,4 +1,4 @@
-FROM ubuntu as builder
+FROM ubuntu:hirsute as builder
 RUN apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get install -y golang git libsystemd-dev make
 ENV GOPATH /root/go
@@ -6,7 +6,7 @@ WORKDIR $GOPATH/src/github.com/box/kube-iptables-tailer
 COPY . $GOPATH/src/github.com/box/kube-iptables-tailer
 RUN make build-cgo
 
-FROM ubuntu
+FROM ubuntu:hirsute
 LABEL maintainer="Saifuding Diliyaer <sdiliyaer@box.com>"
 WORKDIR /root/
 COPY --from=builder /root/go/src/github.com/box/kube-iptables-tailer/kube-iptables-tailer /kube-iptables-tailer
