@@ -39,11 +39,20 @@ func TestPacketDropIsExpired(t *testing.T) {
 }
 
 // Test if packet parser works for packet drop
-func TestParsingDropLog(t *testing.T) {
+func TestParsingDropLogDefaultLayout(t *testing.T) {
+	parsingDropLogFmt(t, util.DefaultPacketDropLogTimeLayout)
+}
+
+func TestParsingDropLogUlogd2(t *testing.T) {
+	parsingDropLogFmt(t, "Jan _2 15:04:05")
+}
+
+func parsingDropLogFmt(t *testing.T, timeLayout string) {
 	channel := make(chan PacketDrop, 100)
 	// need to use curTime because parse() will not insert expired packetDrop
 	curTime := time.Now().Truncate(time.Second)
-	logTime := curTime.Format(util.DefaultPacketDropLogTimeLayout)
+	logTime := curTime.Format(timeLayout)
+
 	testLog := fmt.Sprintf("%s %s %s SRC=%s SPT=%s DST=%s DPT=%s PROTO=%s IN=%s OUT=%s MAC=%s TTL=%s", logTime, testHostname, testLogPrefix, testSrcIP, testSrcPort, testDstIP, testDstPort, testProto, testInterfaceReceived, testInterfaceSent, testMacAddress, testPacketTtl)
 	expected := PacketDrop{
 		LogTime:           curTime,
@@ -58,7 +67,7 @@ func TestParsingDropLog(t *testing.T) {
 		MacAddress:        testMacAddress,
 		Ttl:               testPacketTtl,
 	}
-	err := parse(testLogPrefix, testLog, channel, util.DefaultPacketDropLogTimeLayout)
+	err := parse(testLogPrefix, testLog, channel, timeLayout)
 	if err != nil {
 		t.Fatalf("Expected %+v, but got error %s", expected, err)
 	}
@@ -118,7 +127,7 @@ func TestParsingNonePacketDropLog(t *testing.T) {
 // Test if getPacketDropLogFields() function works
 func TestGetPacketDropLogFields(t *testing.T) {
 	emptyLog := " "
-	_, err := getPacketDropLogFields(emptyLog)
+	_, err := getPacketDropLogFields(emptyLog, util.DefaultPacketDropLogTimeLayout)
 	if err == nil {
 		t.Fatalf("Expected error from empty log, but got nil")
 	}
@@ -126,7 +135,7 @@ func TestGetPacketDropLogFields(t *testing.T) {
 	curTime := time.Now().Format(util.DefaultPacketDropLogTimeLayout)
 	// missing IPs
 	packetDropLogMissingField := fmt.Sprintf("%s %s ", curTime, testHostname)
-	_, err = getPacketDropLogFields(packetDropLogMissingField)
+	_, err = getPacketDropLogFields(packetDropLogMissingField, util.DefaultPacketDropLogTimeLayout)
 	if err == nil {
 		t.Fatalf("Expected error from log %s, but got nil", packetDropLogMissingField)
 	}

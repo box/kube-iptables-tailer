@@ -116,7 +116,7 @@ func isRequiredPacketDropLog(logPrefix, log string) bool {
 // Return a PacketDrop object constructed from given PacketDropLog
 func getPacketDrop(packetDropLog, logTimeLayout string) (PacketDrop, error) {
 	// object PacketDrop needs at least 4 different fields
-	logFields, err := getPacketDropLogFields(packetDropLog)
+	logFields, err := getPacketDropLogFields(packetDropLog, logTimeLayout)
 	if err != nil {
 		return PacketDrop{}, err
 	}
@@ -126,6 +126,11 @@ func getPacketDrop(packetDropLog, logTimeLayout string) (PacketDrop, error) {
 	logTime, err := time.Parse(logTimeLayout, logFields[0])
 	if err != nil {
 		return PacketDrop{}, err
+	}
+
+	//HACK: if year is not present, assume current year
+	if logTime.Year() == 0 {
+		logTime = time.Date(time.Now().Year(), logTime.Month(), logTime.Day(), logTime.Hour(), logTime.Minute(), logTime.Second(), logTime.Nanosecond(), time.Local)
 	}
 
 	hostName := logFields[1]
@@ -188,13 +193,28 @@ func getPacketDrop(packetDropLog, logTimeLayout string) (PacketDrop, error) {
 }
 
 // Helper function to check and return fields (if there are enough of them) of given PacketDrop log
-func getPacketDropLogFields(packetDropLog string) ([]string, error) {
+func getPacketDropLogFields(packetDropLog string, logTimeLayout string) ([]string, error) {
+	// we are expecting first field to be a log time,
+	timeFieldsInLayout := strings.Fields(logTimeLayout)
+
+	// capture leading timeFieldsInLayout.num fields as a single timestamp field
 	logFields := strings.Fields(packetDropLog)
+	if len(logFields) == 0 {
+		return []string{}, errors.New(fmt.Sprintf("Empty packet drop: log=%+v", packetDropLog))
+	}
+
+	timeField := strings.Join(logFields[:len(timeFieldsInLayout)], " ")
+
+	otherFields := logFields[len(timeFieldsInLayout):]
+
+	resultingFields := append([]string{timeField}, otherFields...)
+
 	// check if the logFields contain enough information about a packet drop
-	if len(logFields) < fieldCount {
+	if len(resultingFields) < fieldCount {
 		return []string{}, errors.New(fmt.Sprintf("Invalid packet drop: log=%+v", packetDropLog))
 	}
-	return logFields, nil
+
+	return resultingFields, nil
 }
 
 // Helper function to get the field from log: "... fieldName=1.1.1" returns "1.1.1"
