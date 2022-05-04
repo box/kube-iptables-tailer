@@ -27,6 +27,8 @@ const (
 	MetricsServerPort        = "METRICS_SERVER_PORT"
 	DefaultMetricsServerPort = 9090
 
+	ProfilerServerPort = "PPROF_SERVER_PORT"
+
 	LogLevel        = "LOG_LEVEL"
 	DefaultLogLevel = "INFO"
 
@@ -84,4 +86,11 @@ func GetEnvStringOrDefault(key string, def string) string {
 		return val
 	}
 	return def
+}
+
+func IsEnvSet(key string) bool {
+	if _, ok := os.LookupEnv(key); ok {
+		return true
+	}
+	return false
 }

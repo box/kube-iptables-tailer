@@ -3,17 +3,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"net/http"
+	"net/http/pprof"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+
 	"github.com/box/kube-iptables-tailer/drop"
 	"github.com/box/kube-iptables-tailer/event"
 	"github.com/box/kube-iptables-tailer/metrics"
 	"github.com/box/kube-iptables-tailer/util"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"log"
-	"net/http"
-	"os"
-	"sync"
-	"time"
 )
 
 func main() {
@@ -36,6 +39,7 @@ func main() {
 	vg.Add(4)
 
 	go startMetricsServer(util.GetEnvIntOrDefault(util.MetricsServerPort, util.DefaultMetricsServerPort))
+	go startProfilerServer()
 
 	//prepare channels
 	logChangeCh := make(chan string)
@@ -63,6 +67,36 @@ func main() {
 func startMetricsServer(port int) {
 	http.Handle("/metrics", metrics.GetInstance().GetHandler())
 	err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
+	if err != nil {
+		zap.L().Fatal(err.Error())
+	}
+}
+
+func startProfilerServer() {
+	port := ""
+	if p, ok := os.LookupEnv(util.ProfilerServerPort); ok {
+		metricsPort := util.GetEnvIntOrDefault(util.MetricsServerPort, util.DefaultMetricsServerPort)
+		if p == strconv.Itoa(metricsPort) {
+			zap.L().Fatal("Cannot start pprof on same port as metrics server")
+		}
+		port = p
+	} else {
+		// If PPROF_SERVER_PORT is not set pprof profiler is not started
+		return
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	server := &http.Server{
+		Addr:    fmt.Sprintf(":%s", port),
+		Handler: mux,
+	}
+	err := server.ListenAndServe()
 	if err != nil {
 		zap.L().Fatal(err.Error())
 	}

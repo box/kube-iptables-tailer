@@ -70,6 +70,7 @@ We suggest running kube-iptables-tailer as a [Daemonset](https://kubernetes.io/d
 * `KUBE_EVENT_DISPLAY_REASON`: (string, default: **PacketDrop**) A brief and UpperCamelCase formatted text showing under the [Reason](https://godoc.org/k8s.io/client-go/tools/record#EventRecorder) section in the event sent from this service.
 * `KUBE_EVENT_SOURCE_COMPONENT_NAME`: (string, default: **kube-iptables-tailer**) A name showing under the From section to indicate the [source](https://godoc.org/k8s.io/api/core/v1#EventSource) of the Kubernetes event.
 * `METRICS_SERVER_PORT`: (int, default: **9090**) Port for the service to host its metrics.
+* `PPROF_SERVER_PORT`: (int) Port at which the pprof package listens for profiling etc. Has no default. If this env var is not set, pprof is not started.
 * `PACKET_DROP_CHANNEL_BUFFER_SIZE`: (int, default: **100**) Size of the channel for existing items to handle. You may need to increase this value if you have a high rate of packet drops being recorded.
 * `PACKET_DROP_EXPIRATION_MINUTES`: (int, default: **10**) Expiration of a packet drop in minutes. Any dropped packet log entries older than this duration will be ignored.
 * `REPEATED_EVENTS_INTERVAL_MINUTES`: (int, default: **2**) Interval of ignoring repeated packet drops in minutes. Any dropped packet log entries with the same source and destination will be ignored if already submitted once within this time period.
