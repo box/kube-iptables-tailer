@@ -1,7 +1,7 @@
 # kube-iptables-tailer
 
 [![Project Status](https://opensource.box.com/badges/active.svg)](https://opensource.box.com/badges)
-[![Build Status](https://travis-ci.com/box/kube-iptables-tailer.svg?token=xQMR2mqCqLKhWA2AL639&branch=master)](https://travis-ci.com/box/kube-iptables-tailer)
+[![Build Status](https://app.travis-ci.com/box/kube-iptables-tailer.svg?token=xQMR2mqCqLKhWA2AL639&branch=master)](https://app.travis-ci.com/github/box/kube-iptables-tailer)
 
 kube-iptables-tailer is a service that gives you better visibility on networking issues in your Kubernetes cluster by detecting the traffic denied by iptables and surfacing corresponding information to the affected Pods via Kubernetes events.
 
