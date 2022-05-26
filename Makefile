@@ -10,11 +10,14 @@ clean:
 fmt:
 	find . -path ./vendor -prune -o -name '*.go' -print | xargs -L 1 -I % gofmt -s -w %
 
-build-cgo: clean fmt
+build-cgo: clean fmt deps
 	$(ENVVAR) CGO_ENABLED=1 go build -mod vendor -o $(APP_NAME)
 
-build: clean fmt
+build: clean fmt deps
 	$(ENVVAR) CGO_ENABLED=0 go build -mod vendor -o $(APP_NAME)
+
+deps:
+	go mod vendor
 
 test-unit: clean deps fmt build
 	CGO_ENABLED=0 go test -v -cover ./...
