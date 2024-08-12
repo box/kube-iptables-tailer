@@ -5,18 +5,8 @@ jobs:
       - image: circleci/python:3
     steps:
       - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - run:
-          name: Build Docker kube-iptables-tailer
-          command: |
-            if [[ $CIRCLE_TAG ]]
-            then DOCKER_TAG=$CIRCLE_TAG
-            else DOCKER_TAG=$CIRCLE_BRANCH-$CIRCLE_BUILD_NUM
-            fi
-            docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-            docker build -t honestica/kube-iptables-tailer:$DOCKER_TAG .
-            docker push honestica/kube-iptables-tailer:$DOCKER_TAG
+      - bot/docker-build-and-push:
+          multiArchEnable: true
 workflows:
   version: 2
   build:
